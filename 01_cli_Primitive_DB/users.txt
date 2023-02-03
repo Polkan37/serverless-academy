@@ -1,0 +1,7 @@
+{ "name": "Oliver", "gender": "male", "age": "18" },
+{ "name": "Norma", "gender": "female", "age": "34" },
+{ "name": "Emma", "gender": "female", "age": "5" },
+{"name":"Din","gender":"male","age":"43"},
+{"name":"Lena","gender":"female","age":"20"},
+{"name":"Alan","gender":"male","age":"16"},
+{"name":"Eva","gender":"female","age":"16"}
