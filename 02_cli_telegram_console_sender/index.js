@@ -14,19 +14,18 @@ program
   .description("Send message to Telegram Bot")
   .action(function (message) {
     bot.sendMessage(chatId, message);
-    bot.logOut;
   });
 
-// program
-//   .command("photo <path>")
-//   .alias("p")
-//   .description(
-//     "Send photo to telegram Bot. Just drag and drop it console after p-flag"
-//   )
-//   .action(function (photoPath) {
-//     console.log("photoPath", typeof photoPath);
-//     sendPhotoToTG();
-//     bot.logOut;
-//   });
+program
+  .command("photo <path>")
+  .alias("p")
+  .description(
+    "Send photo to telegram Bot. Just drag and drop it console after p-flag"
+  )
+  .action(function (photoPath) {
+    console.log("photoPath", photoPath);
+    const url = photoPath;
+    bot.sendPhoto(chatId, url);
+  });
 
 program.parse(process.argv);
