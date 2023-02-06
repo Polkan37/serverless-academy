@@ -1,6 +1,7 @@
 const { Command } = require("commander");
 const program = new Command();
 
+process.env.NTBA_FIX_350 = '1'
 const token = "5204989571:AAEp9p9YX4nWDzS5CMubY1snqc9SqBBFjVo";
 const chatId = "247856090";
 
@@ -12,8 +13,9 @@ program
   .command("message <message>")
   .alias("m")
   .description("Send message to Telegram Bot")
-  .action(function (message) {
-    bot.sendMessage(chatId, message);
+  .action(async function (message) {
+    await bot.sendMessage(chatId, message);
+    process.exit();
   });
 
 program
@@ -22,10 +24,12 @@ program
   .description(
     "Send photo to telegram Bot. Just drag and drop it console after p-flag"
   )
-  .action(function (photoPath) {
+  .action(async function (photoPath) {
     console.log("photoPath", photoPath);
     const url = photoPath;
-    bot.sendPhoto(chatId, url);
+    await bot.sendPhoto(chatId, url);
+    process.exit();
+
   });
 
 program.parse(process.argv);
