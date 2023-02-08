@@ -32,6 +32,14 @@ bot.onText(/\/Погода/, (msg) => {
   );
 });
 
+bot.onText(/\/stop/, (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    "До побачення"
+  );
+  bot.stopPolling();
+});
+
 bot.onText(/Кожні 3 години/, async (msg) => {
   showWeather(msg).then(setInterval(async () => showWeather(msg), 10800000));
 });
