@@ -3,6 +3,7 @@ const city = "Kyiv";
 let intervalId;
 const token = "5627300950:AAFbBlPgE4AEr0DaMdEmrYjSQhCu887f4cs";
 
+process.env.NTBA_FIX_350 = '1'
 const TelegramBot = require("node-telegram-bot-api");
 const bot = new TelegramBot(token, { polling: true });
 
@@ -80,7 +81,7 @@ function showStartButtonsInTg(msg, message) {
 }
 
 function getHoursInMiliseconds(hours) {
-  return hours * 10800;
+  return hours * 10800000;
 }
 
 async function getForecast(msg) {
