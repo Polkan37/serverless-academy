@@ -1,20 +1,15 @@
 const axios = require("axios");
 const city = "Kyiv";
-
-process.env.NTBA_FIX_350 = "1";
+let intervalId;
 const token = "5627300950:AAFbBlPgE4AEr0DaMdEmrYjSQhCu887f4cs";
-const chatId = "247856090";
 
 const TelegramBot = require("node-telegram-bot-api");
 const bot = new TelegramBot(token, { polling: true });
 
-bot.sendMessage(chatId, `Вітаю! Оберіть опцію нижче`, {
-  reply_markup: {
-    keyboard: [["/Погода"]],
-    resize_keyboard: true,
-    one_time_keyboard: true,
-    force_reply: true,
-  },
+bot.on("message", (msg) => {
+  if (msg.text == "/start") {
+    showStartButtonsInTg(msg, "Вітаю! Оберіть опцію нижче");
+  }
 });
 
 bot.onText(/\/Погода/, (msg) => {
@@ -22,37 +17,77 @@ bot.onText(/\/Погода/, (msg) => {
     msg.chat.id,
     "Добре, що вас цікавить погода в Києві. \n Як часто оновлювати погоду?",
     {
-      parse_mode: "Markdown",
       reply_markup: {
         resize_keyboard: true,
-        one_time_keyboard: true,
-        keyboard: [["Кожні 3 години", "Кожні 6 годин"]],
+        force_reply: true,
+        keyboard: [["Кожні 3 години", "Кожні 6 годин"], ["В попереднє меню"]],
       },
     }
   );
 });
 
+bot.onText(/В попереднє меню/, (msg) => {
+  console.log("back to enter");
+  clearInterval(intervalId);
+  console.log("intervalId", intervalId);
+  showStartButtonsInTg(msg, "Оберіть опцію нижче");
+});
+
+bot.onText(/Кожні ([0-9]{1}) годин/, async (msg) => {
+  const updateEveryInHours = msg.text.match(/\d+/).map(Number).toString();
+  const options = ["3", "6"];
+
+  if (options.includes(updateEveryInHours)) {
+    getForecast(msg).then((result) => {
+      bot.sendMessage(msg.chat.id, result, {
+        reply_markup: {
+          resize_keyboard: true,
+          force_reply: true,
+          keyboard: [["В попереднє меню"]],
+        },
+      });
+      intervalId = setInterval(() => {
+        getForecast(msg).then((result) => bot.sendMessage(msg.chat.id, result));
+      }, getHoursInMiliseconds(updateEveryInHours));
+    });
+  }
+});
+
 bot.onText(/\/stop/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    "До побачення"
-  );
-  bot.stopPolling();
+  stopBot(msg);
 });
 
-bot.onText(/Кожні 3 години/, async (msg) => {
-  showWeather(msg).then(setInterval(async () => showWeather(msg), 10800000));
-});
+function stopBot(msg) {
+  bot
+    .sendMessage(
+      msg.chat.id,
+      "До побачення! \n\n *щоб почати спочатку перезапустіть бота"
+    )
+    .then(() => {
+      clearInterval(intervalId);
+      bot.stopPolling();
+    });
+}
 
-bot.onText(/Кожні 6 годин/, async (msg) => {
-  showWeather(msg).then(setInterval(async () => showWeather(msg), 1080000000));
-});
+function showStartButtonsInTg(msg, message) {
+  bot.sendMessage(msg.chat.id, message, {
+    reply_markup: {
+      keyboard: [["/Погода"]],
+      resize_keyboard: true,
+      force_reply: true,
+    },
+  });
+}
 
-async function showWeather(msg) {
+function getHoursInMiliseconds(hours) {
+  return hours * 10800;
+}
+
+async function getForecast(msg) {
   const weather = await getWeather(city);
   const message = `В Києві зараз ${weather.temperature} °C \n відчувається як ${weather.tempFeelsLike} °C \nВологість: ${weather.humidity} % \nШвидкість вітру: ${weather.windSpeed} метрів за секунду \nХмарність: ${weather.cloudiness} %`;
-
-  bot.sendMessage(msg.chat.id, message);
+  
+  return message;
 }
 
 async function getWeather(cityName) {
