@@ -28,9 +28,7 @@ bot.onText(/\/Погода/, (msg) => {
 });
 
 bot.onText(/В попереднє меню/, (msg) => {
-  console.log("back to enter");
   clearInterval(intervalId);
-  console.log("intervalId", intervalId);
   showStartButtonsInTg(msg, "Оберіть опцію нижче");
 });
 
