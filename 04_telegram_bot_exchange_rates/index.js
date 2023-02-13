@@ -264,7 +264,7 @@ async function getForecast(param) {
 }
 
 function getWeather(cityName) {
-  const apiRequestUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&lang=ua&appid=2b387d56a3a890b72f295f70051506c6`;
+  const apiRequestUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&lang=ua&appid=${process.env.OPENWEATHER_APPID}`;
 
   const weather = axios({
     method: "GET",
