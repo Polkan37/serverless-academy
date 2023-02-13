@@ -1,9 +1,9 @@
 const axios = require("axios");
 const city = "Kyiv";
 let intervalId;
-const token = "5627300950:AAFbBlPgE4AEr0DaMdEmrYjSQhCu887f4cs";
+const token = TELEGRAM_API_TOKEN;
 
-process.env.NTBA_FIX_350 = '1'
+process.env.NTBA_FIX_350 = "1";
 const TelegramBot = require("node-telegram-bot-api");
 const bot = new TelegramBot(token, { polling: true });
 
@@ -13,7 +13,7 @@ bot.on("message", (msg) => {
   }
 });
 
-bot.onText(/\/Погода/, (msg) => {
+bot.onText(/\/Погода/, async (msg) => {
   bot.sendMessage(
     msg.chat.id,
     "Добре, що вас цікавить погода в Києві. \n Як часто оновлювати погоду?",
@@ -32,24 +32,27 @@ bot.onText(/В попереднє меню/, (msg) => {
   showStartButtonsInTg(msg, "Оберіть опцію нижче");
 });
 
-bot.onText(/Кожні ([0-9]{1}) годин/, async (msg) => {
-  const updateEveryInHours = msg.text.match(/\d+/).map(Number).toString();
-  const options = ["3", "6"];
+bot.onText(/Кожні 3 годин/, async (msg) => {
+  const forecast = await getForecast('all');
+  bot.sendMessage(msg.chat.id, forecast.join(""), {
+    reply_markup: {
+      resize_keyboard: true,
+      force_reply: true,
+      keyboard: [["В попереднє меню"]],
+    },
+  });
+});
 
-  if (options.includes(updateEveryInHours)) {
-    getForecast(msg).then((result) => {
-      bot.sendMessage(msg.chat.id, result, {
-        reply_markup: {
-          resize_keyboard: true,
-          force_reply: true,
-          keyboard: [["В попереднє меню"]],
-        },
-      });
-      intervalId = setInterval(() => {
-        getForecast(msg).then((result) => bot.sendMessage(msg.chat.id, result));
-      }, getHoursInMiliseconds(updateEveryInHours));
-    });
-  }
+bot.onText(/Кожні 6 годин/, async (msg) => {
+  const forecast = await getForecast('nth');
+
+  bot.sendMessage(msg.chat.id, forecast.join(""), {
+    reply_markup: {
+      resize_keyboard: true,
+      force_reply: true,
+      keyboard: [["В попереднє меню"]],
+    },
+  });
 });
 
 bot.onText(/\/stop/, (msg) => {
@@ -78,21 +81,70 @@ function showStartButtonsInTg(msg, message) {
   });
 }
 
-function getHoursInMiliseconds(hours) {
-  return hours * 10800000;
-}
+async function getForecast(param) {
 
-async function getForecast(msg) {
-  const weather = await getWeather(city);
-  const message = `В Києві зараз ${weather.temperature} °C \n відчувається як ${weather.tempFeelsLike} °C \nВологість: ${weather.humidity} % \nШвидкість вітру: ${weather.windSpeed} метрів за секунду \nХмарність: ${weather.cloudiness} %`;
+  const forecast = await getWeather(city);
+  const forecastMessage = [];
   
+  if(param == 'all'){
+    forecast.data.list.map((currentWeatherPoint) => {
+    const nowTimeMark = new Date(currentWeatherPoint.dt_txt);
+      forecastMessage.push({
+        date: `${nowTimeMark.toLocaleDateString("uk-UA")}`,
+        time: `${nowTimeMark.getHours()}:${
+          nowTimeMark.getMinutes().toString.length == 1
+            ? "0" + nowTimeMark.getMinutes()
+            : nowTimeMark.getMinutes()
+        }`,
+        temperature: `${kelvinToCelsius(
+          currentWeatherPoint.main.temp
+        )} °C відчувається ${kelvinToCelsius(
+          currentWeatherPoint.main.feels_like
+        )} °C`,
+        details: `${currentWeatherPoint.weather[0].description}, вітер ${currentWeatherPoint.wind.speed} м/c, `,
+      });
+    });
+  }
+  if(param == 'nth'){
+    const workFlow = forecast.data.list.filter( (el,index) => index % 2 === 0)
+    
+    workFlow.map((currentWeatherPoint) => {
+    const nowTimeMark = new Date(currentWeatherPoint.dt_txt);
+      forecastMessage.push({
+        date: `${nowTimeMark.toLocaleDateString("uk-UA")}`,
+        time: `${nowTimeMark.getHours()}:${
+          nowTimeMark.getMinutes().toString.length == 1
+            ? "0" + nowTimeMark.getMinutes()
+            : nowTimeMark.getMinutes()
+        }`,
+        temperature: `${kelvinToCelsius(
+          currentWeatherPoint.main.temp
+        )} °C відчувається ${kelvinToCelsius(
+          currentWeatherPoint.main.feels_like
+        )} °C`,
+        details: `${currentWeatherPoint.weather[0].description}, вітер ${currentWeatherPoint.wind.speed} м/c, `,
+      });
+    });
+
+  }
+
+  let currentDate = new Date().toLocaleDateString("uk-UA");
+  const message = [currentDate, "\n"];
+  forecastMessage.forEach((el) => {
+    if (el.date !== currentDate) {
+      message.push("\n", el.date, "\n");
+      currentDate = el.date;
+    }
+    message.push(`${el.time}: ${el.temperature}, ${el.details}\n`);
+  });
+
   return message;
 }
 
-async function getWeather(cityName) {
-  const apiRequestUrl = `http://api.openweathermap.org/data/2.5/weather?q=${cityName}&APPID=2b387d56a3a890b72f295f70051506c6`;
+function getWeather(cityName) {
+  const apiRequestUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&lang=ua&appid=2b387d56a3a890b72f295f70051506c6`;
 
-  const weather = await axios({
+  const weather = axios({
     method: "GET",
     url: apiRequestUrl,
   })
@@ -103,14 +155,7 @@ async function getWeather(cityName) {
       return error;
     });
 
-  const result = {
-    temperature: kelvinToCelsius(weather.data.main.temp),
-    tempFeelsLike: kelvinToCelsius(weather.data.main.feels_like),
-    humidity: weather.data.main.humidity,
-    windSpeed: weather.data.wind.speed,
-    cloudiness: weather.data.clouds.all,
-  };
-  return result;
+  return weather;
 }
 
 function kelvinToCelsius(temperature) {
