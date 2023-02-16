@@ -1,59 +1,43 @@
-const input = document.querySelector("#input");
-const fileupList = document.getElementsByClassName("fileup-list")[0];
-const fileupInput = document.getElementsByClassName("fileup-input")[0];
+const fs = require("fs");
+const folder = "./2kk_words_400x400/";
+const files = [];
+const uniqueRecords = {};
 
-const users = {};
-let files;
-
-fileupInput.addEventListener("change", function (event) {
-  files = event.srcElement.files;
-  console.log("files", files);
-  try {
-    for (const [key, file] of Object.entries(files)) {
-      readFile(file);
-    }
-  } catch (error) {
-    console.log("error", error);
-  } finally {
-    console.log("users", users);
-    const result = existInAllFiles();
-    console.log("result", result);
-  }
+fs.readdirSync(folder).forEach((file) => {
+  files.push(file);
 });
 
-function readFile(file) {
-  const reader = new FileReader();
-  console.log("fileName", file.name);
-
-  reader.addEventListener("load", (event) => {
-    const fileName = file.name;
-    const content = event.target.result;
-    const unique = [...new Set(content.split(/\r?\n/))];
-    unique.forEach((user) => {
-      users[user] ? users[user].push(fileName) : (users[user] = [fileName]);
-    });
-    console.log(fileName, " - ", Object.keys(users).length);
+files.forEach((file) => {
+  const filePath = folder + file;
+  const data = fs.readFileSync(filePath, { encoding: "utf8", flag: "r" });
+  const unique = [...new Set(data.split(/\r?\n/))];
+  unique.forEach( record => {
+    uniqueRecords[record] ? uniqueRecords[record].push(file) : (uniqueRecords[record] = [file]);
   });
+});
 
-  reader.readAsText(file);
-}
+const result = existInAtleastTen();
+console.log('result', result)
+
+
+
 
 function uniqueValues() {
-  return Object.keys(users).length;
+  return Object.keys(uniqueRecords).length;
 }
 
 function existInAllFiles() {
   const existedInAllFiles = [];
-  for (const [key, value] of Object.entries(users)) {
+  for (const [key, value] of Object.entries(uniqueRecords)) {
     if (value.length === 20) existedInAllFiles.push(key);
   }
   return existedInAllFiles.length;
 }
 
 function existInAtleastTen() {
-    const existedInAtLeastTen = [];
-    for (const [key, value] of Object.entries(users)) {
-      if (value.length >= 10) existedInAtLeastTen.push(key);
-    }
-    return existedInAtLeastTen.length;
+  const existedInAtLeastTen = [];
+  for (const [key, value] of Object.entries(uniqueRecords)) {
+    if (value.length >= 10) existedInAtLeastTen.push(key);
+  }
+  return existedInAtLeastTen.length;
 }
