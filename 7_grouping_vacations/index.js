@@ -1,7 +1,6 @@
 const fs = require("fs");
 const data = [];
 
-
 fs.readFile("./vacations.json", "utf8", (err, jsonString) => {
   if (err) {
     console.log("Error reading file:", err);
@@ -9,27 +8,31 @@ fs.readFile("./vacations.json", "utf8", (err, jsonString) => {
   }
   try {
     const vacations = JSON.parse(jsonString);
+    vacations.forEach((vacation) => {
+      const result = data.find(record => record?.userName === vacation.user.name)
+      result ? result.vacations.push(getVacationDates(vacation)) : data.push(getUserInfo(vacation))
 
-    vacations.forEach(vacation => {
-        data.find( el => data.userId === vacation.user._id) ? data.userId[vacation.user._id].vacations.push({"startDate": vacation.startDate, "endDate": vacation.endDate}) : data.push(getUserInfo(vacation));
-    });
+    })
 
-    fs.writeFileSync('./out.json', JSON.stringify(data))
-
+    fs.writeFileSync("./out.json", JSON.stringify(data));
   } catch (err) {
     console.log("Error parsing JSON string:", err);
   }
 });
 
+function getVacationDates(vacationData) {
+  return { startDate: vacationData.startDate, endDate: vacationData.endDate };
+}
+
 function getUserInfo(record) {
-    return {
-        "userId": record.user._id,
-        "userName": record.user.name,
-        "vacations":[
-            {
-                "startDate": record.startDate,
-                "endDate": record.endDate
-            }
-        ]
-    }
+  return {
+    "userId": record.user._id,
+    "userName": record.user.name,
+    "vacations": [
+      {
+        "startDate": record.startDate,
+        "endDate": record.endDate,
+      },
+    ],
+  };
 }
